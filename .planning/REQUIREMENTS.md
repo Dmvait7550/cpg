@@ -54,12 +54,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 | Feature | Reason |
 |---------|--------|
-| JSON file/stdin input mode | gRPC only — eliminates custom JSON parsing, uses native proto types |
+| JSON file/stdin input mode | gRPC only -- eliminates custom JSON parsing, uses native proto types |
 | Named port resolution | Exact port numbers are unambiguous and match datapath directly |
-| CiliumClusterwideNetworkPolicy | Namespace-scoped only — cluster-wide policies are hand-crafted by platform teams |
-| Web UI / dashboard | CLI tool only — editor.networkpolicy.io exists for visualization |
-| Policy simulation / dry-run | Cilium audit mode already provides this — don't reimplement |
-| Auto kubectl apply | Dangerous in production — users apply via their GitOps pipeline |
+| CiliumClusterwideNetworkPolicy | Namespace-scoped only -- cluster-wide policies are hand-crafted by platform teams |
+| Web UI / dashboard | CLI tool only -- editor.networkpolicy.io exists for visualization |
+| Policy simulation / dry-run | Cilium audit mode already provides this -- don't reimplement |
+| Auto kubectl apply | Dangerous in production -- users apply via their GitOps pipeline |
 
 ## Traceability
 
@@ -67,29 +67,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONN-01 | — | Pending |
-| CONN-02 | — | Pending |
-| CONN-03 | — | Pending |
-| CONN-04 | — | Pending |
-| CONN-05 | — | Pending |
-| PGEN-01 | — | Pending |
-| PGEN-02 | — | Pending |
-| PGEN-03 | — | Pending |
-| PGEN-04 | — | Pending |
-| PGEN-05 | — | Pending |
-| PGEN-06 | — | Pending |
-| OUTP-01 | — | Pending |
-| OUTP-02 | — | Pending |
-| OUTP-03 | — | Pending |
-| DEDP-01 | — | Pending |
-| DEDP-02 | — | Pending |
-| DEDP-03 | — | Pending |
+| CONN-01 | Phase 2 | Pending |
+| CONN-02 | Phase 3 | Pending |
+| CONN-03 | Phase 2 | Pending |
+| CONN-04 | Phase 2 | Pending |
+| CONN-05 | Phase 2 | Pending |
+| PGEN-01 | Phase 1 | Pending |
+| PGEN-02 | Phase 1 | Pending |
+| PGEN-03 | Phase 3 | Pending |
+| PGEN-04 | Phase 1 | Pending |
+| PGEN-05 | Phase 1 | Pending |
+| PGEN-06 | Phase 1 | Pending |
+| OUTP-01 | Phase 1 | Pending |
+| OUTP-02 | Phase 2 | Pending |
+| OUTP-03 | Phase 1 | Pending |
+| DEDP-01 | Phase 3 | Pending |
+| DEDP-02 | Phase 3 | Pending |
+| DEDP-03 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17 ⚠️
+- Mapped to phases: 17
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-08*
-*Last updated: 2026-03-08 after initial definition*
+*Last updated: 2026-03-08 after roadmap creation*
