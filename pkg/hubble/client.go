@@ -1,10 +1,17 @@
 package hubble
 
 import (
+	"context"
+	"crypto/tls"
+	"fmt"
 	"time"
 
 	flowpb "github.com/cilium/cilium/api/v1/flow"
+	observerpb "github.com/cilium/cilium/api/v1/observer"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Client wraps a gRPC connection to Hubble Relay for streaming dropped flows.
@@ -23,6 +30,96 @@ func NewClient(server string, tlsEnabled bool, timeout time.Duration, logger *za
 		timeout:    timeout,
 		logger:     logger,
 	}
+}
+
+// flowStream abstracts the gRPC streaming interface for testability.
+type flowStream interface {
+	Recv() (*observerpb.GetFlowsResponse, error)
+	Context() context.Context
+}
+
+// StreamDroppedFlows connects to Hubble Relay and streams dropped flows into
+// typed channels. The caller owns the context; cancelling it stops the stream.
+// Both returned channels are closed when the stream ends.
+func (c *Client) StreamDroppedFlows(ctx context.Context, namespaces []string, allNS bool) (<-chan *flowpb.Flow, <-chan *flowpb.LostEvent, error) {
+	var transportCreds grpc.DialOption
+	if c.tlsEnabled {
+		transportCreds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
+	} else {
+		transportCreds = grpc.WithTransportCredentials(insecure.NewCredentials())
+	}
+
+	conn, err := grpc.NewClient(c.server, transportCreds)
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating gRPC client: %w", err)
+	}
+
+	client := observerpb.NewObserverClient(conn)
+
+	req := &observerpb.GetFlowsRequest{
+		Follow:    true,
+		Whitelist: buildFilters(namespaces, allNS),
+	}
+
+	stream, err := client.GetFlows(ctx, req)
+	if err != nil {
+		conn.Close()
+		return nil, nil, fmt.Errorf("starting flow stream: %w", err)
+	}
+
+	flows, lostEvents := streamFromSource(stream, c.logger, conn)
+
+	return flows, lostEvents, nil
+}
+
+// closer is implemented by types that need cleanup when streaming ends (e.g., *grpc.ClientConn).
+type closer interface {
+	Close() error
+}
+
+// streamFromSource reads from a flowStream and dispatches to typed channels.
+// It closes both channels (and the optional conn) when the stream ends or returns an error.
+func streamFromSource(stream flowStream, logger *zap.Logger, closers ...closer) (<-chan *flowpb.Flow, <-chan *flowpb.LostEvent) {
+	flows := make(chan *flowpb.Flow, 256)
+	lostEvents := make(chan *flowpb.LostEvent, 16)
+
+	go func() {
+		defer close(flows)
+		defer close(lostEvents)
+		defer func() {
+			for _, c := range closers {
+				c.Close()
+			}
+		}()
+
+		for {
+			resp, err := stream.Recv()
+			if err != nil {
+				if stream.Context().Err() == nil {
+					logger.Debug("hubble stream ended", zap.Error(err))
+				}
+				return
+			}
+
+			if f := resp.GetFlow(); f != nil {
+				select {
+				case flows <- f:
+				case <-stream.Context().Done():
+					return
+				}
+			}
+
+			if le := resp.GetLostEvents(); le != nil {
+				select {
+				case lostEvents <- le:
+				case <-stream.Context().Done():
+					return
+				}
+			}
+		}
+	}()
+
+	return flows, lostEvents
 }
 
 // buildFilters constructs FlowFilter whitelist entries to filter dropped flows
