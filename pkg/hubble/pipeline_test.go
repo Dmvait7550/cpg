@@ -318,7 +318,7 @@ func TestClusterDedup_SkipsMatchingPolicy(t *testing.T) {
 
 	// Create cluster policies map with the same policy
 	clusterPolicies := map[string]*ciliumv2.CiliumNetworkPolicy{
-		"server": generatedPolicy,
+		"cpg-server": generatedPolicy,
 	}
 
 	source := &mockFlowSource{
