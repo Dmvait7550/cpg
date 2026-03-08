@@ -175,6 +175,106 @@ func TestBuildPolicy_DifferentPeers(t *testing.T) {
 	assert.Len(t, p.Spec.Ingress, 2)
 }
 
+func TestBuildPolicy_WorldEgressCIDR(t *testing.T) {
+	f := testdata.WorldEgressTCPFlow(
+		[]string{"k8s:app=client"},
+		"default",
+		"93.184.216.34",
+		443,
+	)
+
+	p := policy.BuildPolicy("default", "client", []*flowpb.Flow{f})
+	require.NotNil(t, p)
+	require.NotNil(t, p.Spec)
+
+	// World egress -> EgressRule with ToCIDR, no ToEndpoints
+	require.Len(t, p.Spec.Egress, 1)
+	assert.Empty(t, p.Spec.Ingress)
+
+	rule := p.Spec.Egress[0]
+	assert.Empty(t, rule.ToEndpoints, "world identity should not produce endpoint selectors")
+	require.Len(t, rule.ToCIDR, 1)
+	assert.Equal(t, api.CIDR("93.184.216.34/32"), rule.ToCIDR[0])
+
+	require.Len(t, rule.ToPorts, 1)
+	require.Len(t, rule.ToPorts[0].Ports, 1)
+	assert.Equal(t, "443", rule.ToPorts[0].Ports[0].Port)
+	assert.Equal(t, api.ProtoTCP, rule.ToPorts[0].Ports[0].Protocol)
+}
+
+func TestBuildPolicy_WorldIngressCIDR(t *testing.T) {
+	f := testdata.WorldIngressTCPFlow(
+		"198.51.100.1",
+		8080,
+		[]string{"k8s:app=server"},
+		"default",
+	)
+
+	p := policy.BuildPolicy("default", "server", []*flowpb.Flow{f})
+	require.NotNil(t, p)
+	require.NotNil(t, p.Spec)
+
+	// World ingress -> IngressRule with FromCIDR, no FromEndpoints
+	require.Len(t, p.Spec.Ingress, 1)
+	assert.Empty(t, p.Spec.Egress)
+
+	rule := p.Spec.Ingress[0]
+	assert.Empty(t, rule.FromEndpoints, "world identity should not produce endpoint selectors")
+	require.Len(t, rule.FromCIDR, 1)
+	assert.Equal(t, api.CIDR("198.51.100.1/32"), rule.FromCIDR[0])
+
+	require.Len(t, rule.ToPorts, 1)
+	require.Len(t, rule.ToPorts[0].Ports, 1)
+	assert.Equal(t, "8080", rule.ToPorts[0].Ports[0].Port)
+	assert.Equal(t, api.ProtoTCP, rule.ToPorts[0].Ports[0].Protocol)
+}
+
+func TestBuildPolicy_MixedWorldAndManaged(t *testing.T) {
+	worldFlow := testdata.WorldEgressTCPFlow(
+		[]string{"k8s:app=client"},
+		"default",
+		"93.184.216.34",
+		443,
+	)
+	managedFlow := testdata.EgressUDPFlow(
+		[]string{"k8s:app=client"},
+		[]string{"k8s:app=dns"},
+		"default",
+		53,
+	)
+
+	p := policy.BuildPolicy("default", "client", []*flowpb.Flow{worldFlow, managedFlow})
+	require.NotNil(t, p)
+	require.NotNil(t, p.Spec)
+
+	// Should have 2 egress rules: one CIDR, one endpoint selector
+	require.Len(t, p.Spec.Egress, 2)
+
+	var hasCIDR, hasEndpoint bool
+	for _, rule := range p.Spec.Egress {
+		if len(rule.ToCIDR) > 0 {
+			hasCIDR = true
+			assert.Empty(t, rule.ToEndpoints)
+		}
+		if len(rule.ToEndpoints) > 0 {
+			hasEndpoint = true
+			assert.Empty(t, rule.ToCIDR)
+		}
+	}
+	assert.True(t, hasCIDR, "should have CIDR rule for world traffic")
+	assert.True(t, hasEndpoint, "should have endpoint selector rule for managed traffic")
+}
+
+func TestBuildPolicy_WorldNilIP(t *testing.T) {
+	f := testdata.WorldFlowNilIP()
+
+	// Should not panic, world flow with nil IP is skipped
+	p := policy.BuildPolicy("default", "client", []*flowpb.Flow{f})
+	require.NotNil(t, p)
+	require.NotNil(t, p.Spec)
+	assert.Empty(t, p.Spec.Egress, "world flow with nil IP should be skipped")
+}
+
 func TestBuildPolicy_YAMLRoundtrip(t *testing.T) {
 	f := testdata.IngressTCPFlow(
 		[]string{"k8s:app=client"},

@@ -49,6 +49,81 @@ func EgressUDPFlow(srcLabels, dstLabels []string, srcNs string, dstPort uint32) 
 	}
 }
 
+// WorldEgressTCPFlow builds a dropped egress TCP flow to a world (external) destination.
+// The destination endpoint has Identity=2 and reserved:world label.
+func WorldEgressTCPFlow(srcLabels []string, srcNs string, dstIP string, dstPort uint32) *flowpb.Flow {
+	return &flowpb.Flow{
+		TrafficDirection: flowpb.TrafficDirection_EGRESS,
+		Source: &flowpb.Endpoint{
+			Labels:    srcLabels,
+			Namespace: srcNs,
+		},
+		Destination: &flowpb.Endpoint{
+			Identity: 2,
+			Labels:   []string{"reserved:world"},
+		},
+		IP: &flowpb.IP{
+			Destination: dstIP,
+		},
+		L4: &flowpb.Layer4{
+			Protocol: &flowpb.Layer4_TCP{
+				TCP: &flowpb.TCP{
+					DestinationPort: dstPort,
+				},
+			},
+		},
+	}
+}
+
+// WorldIngressTCPFlow builds a dropped ingress TCP flow from a world (external) source.
+// The source endpoint has Identity=2 and reserved:world label.
+func WorldIngressTCPFlow(srcIP string, srcPort uint32, dstLabels []string, dstNs string) *flowpb.Flow {
+	return &flowpb.Flow{
+		TrafficDirection: flowpb.TrafficDirection_INGRESS,
+		Source: &flowpb.Endpoint{
+			Identity: 2,
+			Labels:   []string{"reserved:world"},
+		},
+		Destination: &flowpb.Endpoint{
+			Labels:    dstLabels,
+			Namespace: dstNs,
+		},
+		IP: &flowpb.IP{
+			Source: srcIP,
+		},
+		L4: &flowpb.Layer4{
+			Protocol: &flowpb.Layer4_TCP{
+				TCP: &flowpb.TCP{
+					DestinationPort: srcPort,
+				},
+			},
+		},
+	}
+}
+
+// WorldFlowNilIP builds a world identity flow with nil IP (edge case).
+func WorldFlowNilIP() *flowpb.Flow {
+	return &flowpb.Flow{
+		TrafficDirection: flowpb.TrafficDirection_EGRESS,
+		Source: &flowpb.Endpoint{
+			Labels:    []string{"k8s:app=client"},
+			Namespace: "default",
+		},
+		Destination: &flowpb.Endpoint{
+			Identity: 2,
+			Labels:   []string{"reserved:world"},
+		},
+		IP: nil,
+		L4: &flowpb.Layer4{
+			Protocol: &flowpb.Layer4_TCP{
+				TCP: &flowpb.TCP{
+					DestinationPort: 443,
+				},
+			},
+		},
+	}
+}
+
 // NilL4Flow builds a flow with nil L4 layer (edge case).
 func NilL4Flow() *flowpb.Flow {
 	return &flowpb.Flow{
