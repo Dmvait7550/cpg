@@ -2,10 +2,15 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+
+	"github.com/gule/cpg/pkg/hubble"
 )
 
 func newGenerateCmd() *cobra.Command {
@@ -81,5 +86,18 @@ func runGenerate(cmd *cobra.Command, _ []string) error {
 		zap.Duration("timeout", timeout),
 	)
 
-	return fmt.Errorf("not yet implemented: Hubble streaming (Phase 2)")
+	// Setup signal-aware context for graceful shutdown
+	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	return hubble.RunPipeline(ctx, hubble.PipelineConfig{
+		Server:        server,
+		TLSEnabled:    tlsEnabled,
+		Timeout:       timeout,
+		Namespaces:    namespaces,
+		AllNamespaces: allNamespaces,
+		OutputDir:     outputDir,
+		FlushInterval: flushInterval,
+		Logger:        logger,
+	})
 }
