@@ -1,0 +1,95 @@
+# Requirements: CPG (Cilium Policy Generator)
+
+**Defined:** 2026-03-08
+**Core Value:** Automatically generate correct CiliumNetworkPolicies from observed Hubble denials so that SREs spend zero time manually writing network policies in default-deny environments.
+
+## v1 Requirements
+
+Requirements for initial release. Each maps to roadmap phases.
+
+### Connectivity
+
+- [ ] **CONN-01**: Tool connects to Hubble Relay via gRPC using cilium/cilium observer proto
+- [ ] **CONN-02**: Tool auto port-forwards to hubble-relay service in kube-system
+- [ ] **CONN-03**: User can override relay address with `--server` flag
+- [ ] **CONN-04**: User can filter observed flows by namespace (`--namespace`) or all namespaces (`--all-namespaces`)
+- [ ] **CONN-05**: Tool detects and warns about LostEvents from Hubble ring buffer overflow
+
+### Policy Generation
+
+- [ ] **PGEN-01**: Tool generates ingress CiliumNetworkPolicy from dropped flows
+- [ ] **PGEN-02**: Tool generates egress CiliumNetworkPolicy from dropped flows
+- [ ] **PGEN-03**: Tool generates CIDR-based rules (toCIDR/fromCIDR) for external traffic (world identity)
+- [ ] **PGEN-04**: Tool uses smart label selection for endpoint selectors (app.kubernetes.io/*, workload name)
+- [ ] **PGEN-05**: Generated policies use exact port number + protocol (TCP/UDP)
+- [ ] **PGEN-06**: Generated YAML is valid CiliumNetworkPolicy that applies cleanly with kubectl
+
+### Output
+
+- [ ] **OUTP-01**: Tool outputs one YAML file per policy in organized directory structure
+- [ ] **OUTP-02**: Tool generates policies continuously in real-time as flows arrive (streaming)
+- [ ] **OUTP-03**: Tool uses structured logging via zap with configurable log levels
+
+### Deduplication
+
+- [ ] **DEDP-01**: Tool deduplicates against existing files in output directory
+- [ ] **DEDP-02**: Tool deduplicates against live CiliumNetworkPolicies in cluster via client-go
+- [ ] **DEDP-03**: Tool aggregates similar flows before generating policies (avoid one policy per packet)
+
+## v2 Requirements
+
+### L7 Policy Generation
+
+- **L7-01**: Tool generates L7 policies (HTTP path/method, DNS names) from L7 flows
+- **L7-02**: Tool supports two-step workflow (deploy L4, observe L7, then generate L7 policies)
+
+### Advanced Features
+
+- **ADV-01**: Tool merges/consolidates multiple granular policies into fewer broader ones
+- **ADV-02**: Tool integrates with Cilium policy audit mode for automated audit-then-enforce workflow
+- **ADV-03**: Tool exposes Prometheus metrics for long-running instances
+- **ADV-04**: Tool shows policy diff against existing cluster state
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| JSON file/stdin input mode | gRPC only — eliminates custom JSON parsing, uses native proto types |
+| Named port resolution | Exact port numbers are unambiguous and match datapath directly |
+| CiliumClusterwideNetworkPolicy | Namespace-scoped only — cluster-wide policies are hand-crafted by platform teams |
+| Web UI / dashboard | CLI tool only — editor.networkpolicy.io exists for visualization |
+| Policy simulation / dry-run | Cilium audit mode already provides this — don't reimplement |
+| Auto kubectl apply | Dangerous in production — users apply via their GitOps pipeline |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CONN-01 | — | Pending |
+| CONN-02 | — | Pending |
+| CONN-03 | — | Pending |
+| CONN-04 | — | Pending |
+| CONN-05 | — | Pending |
+| PGEN-01 | — | Pending |
+| PGEN-02 | — | Pending |
+| PGEN-03 | — | Pending |
+| PGEN-04 | — | Pending |
+| PGEN-05 | — | Pending |
+| PGEN-06 | — | Pending |
+| OUTP-01 | — | Pending |
+| OUTP-02 | — | Pending |
+| OUTP-03 | — | Pending |
+| DEDP-01 | — | Pending |
+| DEDP-02 | — | Pending |
+| DEDP-03 | — | Pending |
+
+**Coverage:**
+- v1 requirements: 17 total
+- Mapped to phases: 0
+- Unmapped: 17 ⚠️
+
+---
+*Requirements defined: 2026-03-08*
+*Last updated: 2026-03-08 after initial definition*
