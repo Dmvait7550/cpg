@@ -44,11 +44,11 @@ Plans:
   2. User can filter observed flows by namespace (`--namespace`) or observe all namespaces (`--all-namespaces`)
   3. Policies are generated continuously as new dropped flows arrive (not batch)
   4. Tool warns the user when Hubble ring buffer overflow causes lost events
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md — Hubble gRPC client + FlowFilter namespace filtering (CONN-01, CONN-03, CONN-04)
+- [ ] 02-02-PLAN.md — Aggregator, pipeline orchestration, LostEvents monitor, CLI wiring (CONN-05, OUTP-02)
 
 ### Phase 3: Production Hardening
 **Goal**: Users get zero-friction connectivity, no duplicate policies, and coverage for external traffic
@@ -74,5 +74,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Policy Engine | 3/3 | Complete | 2026-03-08 |
-| 2. Hubble Streaming Pipeline | 0/0 | Not started | - |
+| 2. Hubble Streaming Pipeline | 0/2 | In progress | - |
 | 3. Production Hardening | 0/0 | Not started | - |
