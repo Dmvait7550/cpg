@@ -5,6 +5,9 @@ import (
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	// Register auth provider plugins (OIDC, GCP, Azure, etc.)
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 // LoadKubeConfig loads a Kubernetes rest.Config from the standard kubeconfig
