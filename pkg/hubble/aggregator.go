@@ -91,7 +91,7 @@ func (a *Aggregator) keyFromFlow(f *flowpb.Flow) (key AggKey, skip bool) {
 	}
 
 	if ep.Namespace == "" {
-		if isReservedIdentity(ep.Labels) {
+		if isActionableReserved(ep.Labels) {
 			warnKey := reservedWarnKey(ep.Labels, f)
 			if _, seen := a.warnedReserved[warnKey]; !seen {
 				a.warnedReserved[warnKey] = struct{}{}
@@ -102,6 +102,7 @@ func (a *Aggregator) keyFromFlow(f *flowpb.Flow) (key AggKey, skip bool) {
 			}
 		} else {
 			a.logger.Debug("skipping flow with empty namespace",
+				zap.Strings("labels", ep.Labels),
 				zap.String("workload", labels.WorkloadName(ep.Labels)),
 			)
 		}
@@ -186,11 +187,22 @@ func reservedWarnKey(epLabels []string, f *flowpb.Flow) string {
 	return fmt.Sprintf("%s/%s", reserved, f.TrafficDirection)
 }
 
-// isReservedIdentity returns true if any of the endpoint labels indicate
-// a Cilium reserved identity (e.g. reserved:health, reserved:host).
-func isReservedIdentity(epLabels []string) bool {
+// actionableReserved lists reserved identities where a CiliumClusterwideNetworkPolicy
+// can actually fix the drop. "reserved:unknown" is not actionable — it represents
+// unidentified traffic (pre-identity resolution, non-IP protocols like ARP).
+var actionableReserved = map[string]struct{}{
+	"reserved:health":         {},
+	"reserved:host":           {},
+	"reserved:remote-node":    {},
+	"reserved:kube-apiserver": {},
+	"reserved:ingress":        {},
+}
+
+// isActionableReserved returns true if the endpoint is a reserved identity
+// that can be addressed with a CiliumClusterwideNetworkPolicy.
+func isActionableReserved(epLabels []string) bool {
 	for _, l := range epLabels {
-		if strings.HasPrefix(l, "reserved:") {
+		if _, ok := actionableReserved[l]; ok {
 			return true
 		}
 	}
