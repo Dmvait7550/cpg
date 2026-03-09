@@ -53,13 +53,6 @@ changelog:
     - title: Other
       order: 999
 
-  extra: |
-    ---
-
-    **Full diff**: https://github.com/SoulKyu/cpg/compare/{{ .PreviousTag }}...{{ .Tag }}
-
-    Thanks to all contributors who made this release possible! {{ range .Contributors }} @{{ .Name }}{{ end }}
-
 release:
   github:
     owner: SoulKyu
