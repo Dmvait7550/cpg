@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
 
-	"github.com/gule/cpg/pkg/policy"
+	"github.com/SoulKyu/cpg/pkg/policy"
 )
 
 func TestAnnotateRules_IngressAndEgress(t *testing.T) {

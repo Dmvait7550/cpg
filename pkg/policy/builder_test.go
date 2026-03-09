@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
 
-	"github.com/gule/cpg/pkg/policy"
-	"github.com/gule/cpg/pkg/policy/testdata"
+	"github.com/SoulKyu/cpg/pkg/policy"
+	"github.com/SoulKyu/cpg/pkg/policy/testdata"
 
 	flowpb "github.com/cilium/cilium/api/v1/flow"
 )

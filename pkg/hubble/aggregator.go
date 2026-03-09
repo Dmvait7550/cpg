@@ -9,8 +9,8 @@ import (
 	flowpb "github.com/cilium/cilium/api/v1/flow"
 	"go.uber.org/zap"
 
-	"github.com/gule/cpg/pkg/labels"
-	"github.com/gule/cpg/pkg/policy"
+	"github.com/SoulKyu/cpg/pkg/labels"
+	"github.com/SoulKyu/cpg/pkg/policy"
 )
 
 // AggKey identifies a flow aggregation bucket by namespace and workload.

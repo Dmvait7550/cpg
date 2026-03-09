@@ -1,4 +1,4 @@
-module github.com/gule/cpg
+module github.com/SoulKyu/cpg
 
 go 1.25.1
 

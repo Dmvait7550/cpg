@@ -13,8 +13,8 @@ import (
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/gule/cpg/pkg/policy"
-	"github.com/gule/cpg/pkg/policy/testdata"
+	"github.com/SoulKyu/cpg/pkg/policy"
+	"github.com/SoulKyu/cpg/pkg/policy/testdata"
 )
 
 func TestAggregator_FlushOnTicker(t *testing.T) {

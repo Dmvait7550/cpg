@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/gule/cpg/pkg/policy"
-	"github.com/gule/cpg/pkg/policy/testdata"
+	"github.com/SoulKyu/cpg/pkg/policy"
+	"github.com/SoulKyu/cpg/pkg/policy/testdata"
 )
 
 func buildTestEvent(ns, workload string) policy.PolicyEvent {

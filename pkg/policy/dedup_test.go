@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/gule/cpg/pkg/policy"
+	"github.com/SoulKyu/cpg/pkg/policy"
 )
 
 func makePolicy(name string, ingress []api.IngressRule, egress []api.EgressRule) *ciliumv2.CiliumNetworkPolicy {

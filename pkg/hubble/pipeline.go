@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/gule/cpg/pkg/output"
-	"github.com/gule/cpg/pkg/policy"
+	"github.com/SoulKyu/cpg/pkg/output"
+	"github.com/SoulKyu/cpg/pkg/policy"
 )
 
 // FlowSource abstracts the streaming source for testability.

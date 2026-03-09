@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 
-	"github.com/gule/cpg/pkg/policy"
+	"github.com/SoulKyu/cpg/pkg/policy"
 )
 
 // Writer writes CiliumNetworkPolicy YAML files to an organized directory structure.

@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/gule/cpg/pkg/policy"
-	"github.com/gule/cpg/pkg/policy/testdata"
+	"github.com/SoulKyu/cpg/pkg/policy"
+	"github.com/SoulKyu/cpg/pkg/policy/testdata"
 )
 
 func TestMergePolicy_ICMPAppendedToExistingTCPPeer(t *testing.T) {

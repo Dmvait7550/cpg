@@ -8,8 +8,8 @@ import (
 
 	flowpb "github.com/cilium/cilium/api/v1/flow"
 
-	"github.com/gule/cpg/pkg/policy"
-	"github.com/gule/cpg/pkg/policy/testdata"
+	"github.com/SoulKyu/cpg/pkg/policy"
+	"github.com/SoulKyu/cpg/pkg/policy/testdata"
 )
 
 func TestMergePolicy_AddPortToExistingPeer(t *testing.T) {

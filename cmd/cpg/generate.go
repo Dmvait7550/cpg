@@ -12,8 +12,8 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 
-	"github.com/gule/cpg/pkg/hubble"
-	"github.com/gule/cpg/pkg/k8s"
+	"github.com/SoulKyu/cpg/pkg/hubble"
+	"github.com/SoulKyu/cpg/pkg/k8s"
 )
 
 func newGenerateCmd() *cobra.Command {
