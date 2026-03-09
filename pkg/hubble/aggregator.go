@@ -2,6 +2,8 @@ package hubble
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	flowpb "github.com/cilium/cilium/api/v1/flow"
@@ -87,9 +89,16 @@ func (a *Aggregator) keyFromFlow(f *flowpb.Flow) (key AggKey, skip bool) {
 	}
 
 	if ep.Namespace == "" {
-		a.logger.Debug("skipping flow with empty namespace",
-			zap.String("workload", labels.WorkloadName(ep.Labels)),
-		)
+		if isReservedIdentity(ep.Labels) {
+			a.logger.Warn("dropped flow targets a reserved identity — cpg generates namespace-scoped CiliumNetworkPolicy and cannot handle reserved endpoints; use a CiliumClusterwideNetworkPolicy instead",
+				zap.Strings("labels", ep.Labels),
+				zap.String("summary", flowSummary(f)),
+			)
+		} else {
+			a.logger.Debug("skipping flow with empty namespace",
+				zap.String("workload", labels.WorkloadName(ep.Labels)),
+			)
+		}
 		return AggKey{}, true
 	}
 
@@ -156,4 +165,34 @@ func monitorLostEvents(ctx context.Context, ch <-chan *flowpb.LostEvent, logger 
 			return nil
 		}
 	}
+}
+
+// isReservedIdentity returns true if any of the endpoint labels indicate
+// a Cilium reserved identity (e.g. reserved:health, reserved:host).
+func isReservedIdentity(epLabels []string) bool {
+	for _, l := range epLabels {
+		if strings.HasPrefix(l, "reserved:") {
+			return true
+		}
+	}
+	return false
+}
+
+// flowSummary returns a short human-readable description of a flow
+// for use in log messages.
+func flowSummary(f *flowpb.Flow) string {
+	dir := f.TrafficDirection.String()
+	proto := "unknown"
+	if f.L4 != nil {
+		if tcp := f.L4.GetTCP(); tcp != nil {
+			proto = fmt.Sprintf("TCP/%d", tcp.DestinationPort)
+		} else if udp := f.L4.GetUDP(); udp != nil {
+			proto = fmt.Sprintf("UDP/%d", udp.DestinationPort)
+		} else if icmp4 := f.L4.GetICMPv4(); icmp4 != nil {
+			proto = fmt.Sprintf("ICMPv4 type=%d", icmp4.Type)
+		} else if icmp6 := f.L4.GetICMPv6(); icmp6 != nil {
+			proto = fmt.Sprintf("ICMPv6 type=%d", icmp6.Type)
+		}
+	}
+	return fmt.Sprintf("%s %s", dir, proto)
 }
