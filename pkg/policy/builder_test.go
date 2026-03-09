@@ -351,18 +351,20 @@ func TestBuildPolicy_MixedTCPAndICMP(t *testing.T) {
 	require.NotNil(t, p)
 	require.NotNil(t, p.Spec)
 
-	// Same entity → single rule with both ICMPs and ToPorts
-	require.Len(t, p.Spec.Egress, 1)
-	rule := p.Spec.Egress[0]
+	// Same entity → two separate rules (ToPorts and ICMPs cannot coexist)
+	require.Len(t, p.Spec.Egress, 2)
 
-	require.Len(t, rule.ToEntities, 1)
-	assert.Equal(t, api.EntityKubeAPIServer, rule.ToEntities[0])
+	// First rule: TCP ports
+	assert.Equal(t, api.EntityKubeAPIServer, p.Spec.Egress[0].ToEntities[0])
+	require.Len(t, p.Spec.Egress[0].ToPorts, 1)
+	assert.Equal(t, "6443", p.Spec.Egress[0].ToPorts[0].Ports[0].Port)
+	assert.Empty(t, p.Spec.Egress[0].ICMPs)
 
-	require.Len(t, rule.ToPorts, 1)
-	assert.Equal(t, "6443", rule.ToPorts[0].Ports[0].Port)
-
-	require.Len(t, rule.ICMPs, 1)
-	assert.Equal(t, "8", rule.ICMPs[0].Fields[0].Type.String())
+	// Second rule: ICMP
+	assert.Equal(t, api.EntityKubeAPIServer, p.Spec.Egress[1].ToEntities[0])
+	require.Len(t, p.Spec.Egress[1].ICMPs, 1)
+	assert.Equal(t, "8", p.Spec.Egress[1].ICMPs[0].Fields[0].Type.String())
+	assert.Empty(t, p.Spec.Egress[1].ToPorts)
 }
 
 func TestBuildPolicy_WorldICMP(t *testing.T) {

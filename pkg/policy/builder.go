@@ -309,55 +309,58 @@ func buildIngressRules(flows []*flowpb.Flow, policyNamespace string) []api.Ingre
 
 	var rules []api.IngressRule
 
-	// Entity rules
+	// Entity rules — ICMPs and ToPorts must be in separate rules per Cilium spec
 	for _, entity := range entityOrder {
 		er := entities[entity]
-		rule := api.IngressRule{
-			IngressCommonRule: api.IngressCommonRule{
-				FromEntities: api.EntitySlice{entity},
-			},
-		}
+		common := api.IngressCommonRule{FromEntities: api.EntitySlice{entity}}
 		if len(er.ports) > 0 {
-			rule.ToPorts = api.PortRules{{Ports: er.ports}}
+			rules = append(rules, api.IngressRule{
+				IngressCommonRule: common,
+				ToPorts:           api.PortRules{{Ports: er.ports}},
+			})
 		}
 		if len(er.icmpFields) > 0 {
-			rule.ICMPs = api.ICMPRules{{Fields: er.icmpFields}}
+			rules = append(rules, api.IngressRule{
+				IngressCommonRule: common,
+				ICMPs:             api.ICMPRules{{Fields: er.icmpFields}},
+			})
 		}
-		rules = append(rules, rule)
 	}
 
 	// CIDR rules
 	for _, key := range cidrOrder {
 		cp := cidrs[key]
-		rule := api.IngressRule{
-			IngressCommonRule: api.IngressCommonRule{
-				FromCIDR: api.CIDRSlice{cp.cidr},
-			},
-		}
+		common := api.IngressCommonRule{FromCIDR: api.CIDRSlice{cp.cidr}}
 		if len(cp.ports) > 0 {
-			rule.ToPorts = api.PortRules{{Ports: cp.ports}}
+			rules = append(rules, api.IngressRule{
+				IngressCommonRule: common,
+				ToPorts:           api.PortRules{{Ports: cp.ports}},
+			})
 		}
 		if len(cp.icmpFields) > 0 {
-			rule.ICMPs = api.ICMPRules{{Fields: cp.icmpFields}}
+			rules = append(rules, api.IngressRule{
+				IngressCommonRule: common,
+				ICMPs:             api.ICMPRules{{Fields: cp.icmpFields}},
+			})
 		}
-		rules = append(rules, rule)
 	}
 
 	// Endpoint selector rules
 	for _, key := range peerOrder {
 		pp := peers[key]
-		rule := api.IngressRule{
-			IngressCommonRule: api.IngressCommonRule{
-				FromEndpoints: []api.EndpointSelector{pp.selector},
-			},
-		}
+		common := api.IngressCommonRule{FromEndpoints: []api.EndpointSelector{pp.selector}}
 		if len(pp.ports) > 0 {
-			rule.ToPorts = api.PortRules{{Ports: pp.ports}}
+			rules = append(rules, api.IngressRule{
+				IngressCommonRule: common,
+				ToPorts:           api.PortRules{{Ports: pp.ports}},
+			})
 		}
 		if len(pp.icmpFields) > 0 {
-			rule.ICMPs = api.ICMPRules{{Fields: pp.icmpFields}}
+			rules = append(rules, api.IngressRule{
+				IngressCommonRule: common,
+				ICMPs:             api.ICMPRules{{Fields: pp.icmpFields}},
+			})
 		}
-		rules = append(rules, rule)
 	}
 	return rules
 }
@@ -437,55 +440,58 @@ func buildEgressRules(flows []*flowpb.Flow, policyNamespace string) []api.Egress
 
 	var rules []api.EgressRule
 
-	// Entity rules
+	// Entity rules — ICMPs and ToPorts must be in separate rules per Cilium spec
 	for _, entity := range entityOrder {
 		er := entities[entity]
-		rule := api.EgressRule{
-			EgressCommonRule: api.EgressCommonRule{
-				ToEntities: api.EntitySlice{entity},
-			},
-		}
+		common := api.EgressCommonRule{ToEntities: api.EntitySlice{entity}}
 		if len(er.ports) > 0 {
-			rule.ToPorts = api.PortRules{{Ports: er.ports}}
+			rules = append(rules, api.EgressRule{
+				EgressCommonRule: common,
+				ToPorts:          api.PortRules{{Ports: er.ports}},
+			})
 		}
 		if len(er.icmpFields) > 0 {
-			rule.ICMPs = api.ICMPRules{{Fields: er.icmpFields}}
+			rules = append(rules, api.EgressRule{
+				EgressCommonRule: common,
+				ICMPs:            api.ICMPRules{{Fields: er.icmpFields}},
+			})
 		}
-		rules = append(rules, rule)
 	}
 
 	// CIDR rules
 	for _, key := range cidrOrder {
 		cp := cidrs[key]
-		rule := api.EgressRule{
-			EgressCommonRule: api.EgressCommonRule{
-				ToCIDR: api.CIDRSlice{cp.cidr},
-			},
-		}
+		common := api.EgressCommonRule{ToCIDR: api.CIDRSlice{cp.cidr}}
 		if len(cp.ports) > 0 {
-			rule.ToPorts = api.PortRules{{Ports: cp.ports}}
+			rules = append(rules, api.EgressRule{
+				EgressCommonRule: common,
+				ToPorts:          api.PortRules{{Ports: cp.ports}},
+			})
 		}
 		if len(cp.icmpFields) > 0 {
-			rule.ICMPs = api.ICMPRules{{Fields: cp.icmpFields}}
+			rules = append(rules, api.EgressRule{
+				EgressCommonRule: common,
+				ICMPs:            api.ICMPRules{{Fields: cp.icmpFields}},
+			})
 		}
-		rules = append(rules, rule)
 	}
 
 	// Endpoint selector rules
 	for _, key := range peerOrder {
 		pp := peers[key]
-		rule := api.EgressRule{
-			EgressCommonRule: api.EgressCommonRule{
-				ToEndpoints: []api.EndpointSelector{pp.selector},
-			},
-		}
+		common := api.EgressCommonRule{ToEndpoints: []api.EndpointSelector{pp.selector}}
 		if len(pp.ports) > 0 {
-			rule.ToPorts = api.PortRules{{Ports: pp.ports}}
+			rules = append(rules, api.EgressRule{
+				EgressCommonRule: common,
+				ToPorts:          api.PortRules{{Ports: pp.ports}},
+			})
 		}
 		if len(pp.icmpFields) > 0 {
-			rule.ICMPs = api.ICMPRules{{Fields: pp.icmpFields}}
+			rules = append(rules, api.EgressRule{
+				EgressCommonRule: common,
+				ICMPs:            api.ICMPRules{{Fields: pp.icmpFields}},
+			})
 		}
-		rules = append(rules, rule)
 	}
 	return rules
 }
