@@ -275,6 +275,143 @@ func TestBuildPolicy_WorldNilIP(t *testing.T) {
 	assert.Empty(t, p.Spec.Egress, "world flow with nil IP should be skipped")
 }
 
+func TestBuildPolicy_EgressICMPv4(t *testing.T) {
+	f := testdata.EgressICMPv4Flow(
+		[]string{"k8s:app.kubernetes.io/name=external-dns"},
+		"external-dns",
+		[]string{"reserved:kube-apiserver", "reserved:remote-node"},
+		"10.6.46.11",
+		8, // EchoRequest
+	)
+
+	p := policy.BuildPolicy("external-dns", "external-dns", []*flowpb.Flow{f})
+	require.NotNil(t, p)
+	require.NotNil(t, p.Spec)
+
+	// Entity egress with ICMP
+	require.Len(t, p.Spec.Egress, 1)
+	rule := p.Spec.Egress[0]
+
+	// Should use toEntities for kube-apiserver
+	require.Len(t, rule.ToEntities, 1)
+	assert.Equal(t, api.EntityKubeAPIServer, rule.ToEntities[0])
+
+	// Should have ICMPs, not ToPorts
+	assert.Empty(t, rule.ToPorts, "ICMP should not produce ToPorts")
+	require.Len(t, rule.ICMPs, 1)
+	require.Len(t, rule.ICMPs[0].Fields, 1)
+	assert.Equal(t, "8", rule.ICMPs[0].Fields[0].Type.String())
+	assert.Equal(t, api.IPv4Family, rule.ICMPs[0].Fields[0].Family)
+}
+
+func TestBuildPolicy_EntityEgressTCP(t *testing.T) {
+	f := testdata.EntityEgressFlow(
+		[]string{"k8s:app.kubernetes.io/name=external-dns"},
+		"external-dns",
+		[]string{"reserved:kube-apiserver", "reserved:remote-node"},
+		"10.6.46.11",
+		6443,
+	)
+
+	p := policy.BuildPolicy("external-dns", "external-dns", []*flowpb.Flow{f})
+	require.NotNil(t, p)
+	require.NotNil(t, p.Spec)
+
+	require.Len(t, p.Spec.Egress, 1)
+	rule := p.Spec.Egress[0]
+
+	// Should use toEntities
+	require.Len(t, rule.ToEntities, 1)
+	assert.Equal(t, api.EntityKubeAPIServer, rule.ToEntities[0])
+
+	// Should have ToPorts for TCP, not ICMPs
+	require.Len(t, rule.ToPorts, 1)
+	assert.Equal(t, "6443", rule.ToPorts[0].Ports[0].Port)
+	assert.Equal(t, api.ProtoTCP, rule.ToPorts[0].Ports[0].Protocol)
+	assert.Empty(t, rule.ICMPs)
+}
+
+func TestBuildPolicy_MixedTCPAndICMP(t *testing.T) {
+	icmpFlow := testdata.EgressICMPv4Flow(
+		[]string{"k8s:app.kubernetes.io/name=external-dns"},
+		"external-dns",
+		[]string{"reserved:kube-apiserver", "reserved:remote-node"},
+		"10.6.46.11",
+		8,
+	)
+	tcpFlow := testdata.EntityEgressFlow(
+		[]string{"k8s:app.kubernetes.io/name=external-dns"},
+		"external-dns",
+		[]string{"reserved:kube-apiserver", "reserved:remote-node"},
+		"10.6.46.11",
+		6443,
+	)
+
+	p := policy.BuildPolicy("external-dns", "external-dns", []*flowpb.Flow{icmpFlow, tcpFlow})
+	require.NotNil(t, p)
+	require.NotNil(t, p.Spec)
+
+	// Same entity → single rule with both ICMPs and ToPorts
+	require.Len(t, p.Spec.Egress, 1)
+	rule := p.Spec.Egress[0]
+
+	require.Len(t, rule.ToEntities, 1)
+	assert.Equal(t, api.EntityKubeAPIServer, rule.ToEntities[0])
+
+	require.Len(t, rule.ToPorts, 1)
+	assert.Equal(t, "6443", rule.ToPorts[0].Ports[0].Port)
+
+	require.Len(t, rule.ICMPs, 1)
+	assert.Equal(t, "8", rule.ICMPs[0].Fields[0].Type.String())
+}
+
+func TestBuildPolicy_WorldICMP(t *testing.T) {
+	f := testdata.EgressICMPv4Flow(
+		[]string{"k8s:app.kubernetes.io/name=external-dns"},
+		"external-dns",
+		[]string{"cidr:10.6.31.11/32", "fqdn:pdns.example.com", "reserved:world"},
+		"10.6.31.11",
+		8,
+	)
+
+	p := policy.BuildPolicy("external-dns", "external-dns", []*flowpb.Flow{f})
+	require.NotNil(t, p)
+	require.NotNil(t, p.Spec)
+
+	require.Len(t, p.Spec.Egress, 1)
+	rule := p.Spec.Egress[0]
+
+	// World → CIDR rule with ICMP
+	require.Len(t, rule.ToCIDR, 1)
+	assert.Equal(t, api.CIDR("10.6.31.11/32"), rule.ToCIDR[0])
+
+	assert.Empty(t, rule.ToPorts)
+	require.Len(t, rule.ICMPs, 1)
+	assert.Equal(t, "8", rule.ICMPs[0].Fields[0].Type.String())
+}
+
+func TestBuildPolicy_EntityICMPYAMLRoundtrip(t *testing.T) {
+	f := testdata.EgressICMPv4Flow(
+		[]string{"k8s:app.kubernetes.io/name=external-dns"},
+		"external-dns",
+		[]string{"reserved:kube-apiserver", "reserved:remote-node"},
+		"10.6.46.11",
+		8,
+	)
+
+	p := policy.BuildPolicy("external-dns", "external-dns", []*flowpb.Flow{f})
+	data, err := yaml.Marshal(p)
+	require.NoError(t, err)
+
+	yamlStr := string(data)
+	assert.Contains(t, yamlStr, "toEntities")
+	assert.Contains(t, yamlStr, "kube-apiserver")
+	assert.Contains(t, yamlStr, "icmps")
+	assert.Contains(t, yamlStr, "type: 8")
+	assert.Contains(t, yamlStr, "family: IPv4")
+	assert.NotContains(t, yamlStr, "toPorts")
+}
+
 func TestBuildPolicy_YAMLRoundtrip(t *testing.T) {
 	f := testdata.IngressTCPFlow(
 		[]string{"k8s:app=client"},

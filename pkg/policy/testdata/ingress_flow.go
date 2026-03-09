@@ -124,6 +124,54 @@ func WorldFlowNilIP() *flowpb.Flow {
 	}
 }
 
+// EgressICMPv4Flow builds a dropped egress ICMPv4 flow for testing.
+func EgressICMPv4Flow(srcLabels []string, srcNs string, dstLabels []string, dstIP string, icmpType uint32) *flowpb.Flow {
+	return &flowpb.Flow{
+		TrafficDirection: flowpb.TrafficDirection_EGRESS,
+		Source: &flowpb.Endpoint{
+			Labels:    srcLabels,
+			Namespace: srcNs,
+		},
+		Destination: &flowpb.Endpoint{
+			Labels: dstLabels,
+		},
+		IP: &flowpb.IP{
+			Destination: dstIP,
+		},
+		L4: &flowpb.Layer4{
+			Protocol: &flowpb.Layer4_ICMPv4{
+				ICMPv4: &flowpb.ICMPv4{
+					Type: icmpType,
+				},
+			},
+		},
+	}
+}
+
+// EntityEgressFlow builds a dropped egress flow to a reserved entity (e.g., kube-apiserver).
+func EntityEgressFlow(srcLabels []string, srcNs string, dstLabels []string, dstIP string, dstPort uint32) *flowpb.Flow {
+	return &flowpb.Flow{
+		TrafficDirection: flowpb.TrafficDirection_EGRESS,
+		Source: &flowpb.Endpoint{
+			Labels:    srcLabels,
+			Namespace: srcNs,
+		},
+		Destination: &flowpb.Endpoint{
+			Labels: dstLabels,
+		},
+		IP: &flowpb.IP{
+			Destination: dstIP,
+		},
+		L4: &flowpb.Layer4{
+			Protocol: &flowpb.Layer4_TCP{
+				TCP: &flowpb.TCP{
+					DestinationPort: dstPort,
+				},
+			},
+		},
+	}
+}
+
 // NilL4Flow builds a flow with nil L4 layer (edge case).
 func NilL4Flow() *flowpb.Flow {
 	return &flowpb.Flow{
