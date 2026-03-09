@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	ciliumv2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	"github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/policy/api"
 )
 
@@ -75,8 +76,11 @@ func matchEndpoints(a, b []api.EndpointSelector) bool {
 	return true
 }
 
-// matchLabelsNormalized compares two label maps ignoring the "any:" prefix
-// that Cilium adds to keys during YAML serialization/deserialization.
+// matchLabelsNormalized compares two label maps after normalizing label keys
+// through Cilium's GetCiliumKeyFrom. This handles the "any:" prefix that Cilium
+// adds to plain keys AND the dot-to-colon transformation for keys like
+// "io.kubernetes.pod.namespace" → "io:kubernetes.pod.namespace" that occurs
+// during EndpointSelector YAML serialization/deserialization roundtrips.
 func matchLabelsNormalized(a, b map[string]string) bool {
 	if len(a) != len(b) {
 		return false
@@ -86,12 +90,20 @@ func matchLabelsNormalized(a, b map[string]string) bool {
 	return reflect.DeepEqual(normA, normB)
 }
 
-// normalizeLabels strips the "any:" prefix from label keys.
-func normalizeLabels(labels map[string]string) map[string]string {
-	result := make(map[string]string, len(labels))
-	for k, v := range labels {
-		key := strings.TrimPrefix(k, "any:")
-		result[key] = v
+// normalizeLabels converts all label keys to Cilium's canonical serialized
+// format ("source:key"). Keys from BuildPolicy have no source prefix (e.g.,
+// "app", "io.kubernetes.pod.namespace"), while keys from YAML roundtrip have
+// the Cilium serialized form (e.g., "any:app", "io:kubernetes.pod.namespace").
+// GetCiliumKeyFrom handles the conversion for plain keys, but must NOT be
+// applied to already-serialized keys (it would double-prefix them).
+func normalizeLabels(lbls map[string]string) map[string]string {
+	result := make(map[string]string, len(lbls))
+	for k, v := range lbls {
+		if strings.IndexByte(k, ':') < 0 {
+			// Plain key (no source prefix) → convert to serialized form
+			k = labels.GetCiliumKeyFrom(k)
+		}
+		result[k] = v
 	}
 	return result
 }

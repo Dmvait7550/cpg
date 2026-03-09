@@ -2,11 +2,11 @@ package policy
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 
 	ciliumv2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
 	"github.com/cilium/cilium/pkg/policy/api"
+	"sigs.k8s.io/yaml"
 )
 
 // PoliciesEquivalent compares two CiliumNetworkPolicies by their Spec only
@@ -34,17 +34,20 @@ func PoliciesEquivalent(a, b *ciliumv2.CiliumNetworkPolicy) bool {
 	normalizeRule(aCopy)
 	normalizeRule(bCopy)
 
-	// Compare EndpointSelector + Ingress + Egress
-	if !reflect.DeepEqual(aCopy.EndpointSelector, bCopy.EndpointSelector) {
+	// Compare via YAML serialization. reflect.DeepEqual is unreliable here
+	// because Cilium's EndpointSelector has unexported fields (sanitized,
+	// cachedLabelSelectorString) that differ between freshly built selectors
+	// and YAML-roundtripped ones. YAML serialization normalizes label keys
+	// through Cilium's custom MarshalJSON, producing consistent output.
+	aData, err := yaml.Marshal(aCopy)
+	if err != nil {
 		return false
 	}
-	if !reflect.DeepEqual(aCopy.Ingress, bCopy.Ingress) {
+	bData, err := yaml.Marshal(bCopy)
+	if err != nil {
 		return false
 	}
-	if !reflect.DeepEqual(aCopy.Egress, bCopy.Egress) {
-		return false
-	}
-	return true
+	return string(aData) == string(bData)
 }
 
 // normalizeRule sorts ingress/egress rules and their ports for deterministic comparison.
