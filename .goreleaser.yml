@@ -42,13 +42,15 @@ archives:
   - id: cpg
     builds:
       - cpg
-    format: tar.gz
+    formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
   - id: krew
     builds:
       - kubectl-cilium_policy_gen
-    format: tar.gz
+    formats:
+      - tar.gz
     name_template: "cilium-policy-gen_{{ .Os }}_{{ .Arch }}"
     files:
       - LICENSE
@@ -102,4 +104,4 @@ release:
     curl -sL https://github.com/SoulKyu/cpg/releases/download/{{ .Tag }}/cpg_{{ .Version }}_linux_amd64.tar.gz | tar xz
     ```
 
-    Thanks to all contributors! {{ range .Contributors }} @{{ .Name }}{{ end }}
+    Thanks to all contributors!
