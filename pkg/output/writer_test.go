@@ -25,7 +25,7 @@ func buildTestEvent(ns, workload string) policy.PolicyEvent {
 	return policy.PolicyEvent{
 		Namespace: ns,
 		Workload:  workload,
-		Policy:    policy.BuildPolicy(ns, workload, flows),
+		Policy:    policy.BuildPolicy(ns, workload, flows, nil),
 	}
 }
 
@@ -93,7 +93,7 @@ func TestWriter_MergeOnWrite(t *testing.T) {
 	event2 := policy.PolicyEvent{
 		Namespace: "default",
 		Workload:  "server",
-		Policy:    policy.BuildPolicy("default", "server", flows2),
+		Policy:    policy.BuildPolicy("default", "server", flows2, nil),
 	}
 	err = w.Write(event2)
 	require.NoError(t, err)
@@ -198,7 +198,7 @@ func TestWriter_WritesDifferentPolicy(t *testing.T) {
 	event2 := policy.PolicyEvent{
 		Namespace: "default",
 		Workload:  "server",
-		Policy:    policy.BuildPolicy("default", "server", flows2),
+		Policy:    policy.BuildPolicy("default", "server", flows2, nil),
 	}
 	err = w.Write(event2)
 	require.NoError(t, err)

@@ -117,7 +117,7 @@ func (a *Aggregator) keyFromFlow(f *flowpb.Flow) (key AggKey, skip bool) {
 // flush sends PolicyEvents for all accumulated buckets and clears them.
 func (a *Aggregator) flush(buckets map[AggKey][]*flowpb.Flow, out chan<- policy.PolicyEvent) {
 	for key, flows := range buckets {
-		cnp := policy.BuildPolicy(key.Namespace, key.Workload, flows)
+		cnp := policy.BuildPolicy(key.Namespace, key.Workload, flows, a.tracker)
 		out <- policy.PolicyEvent{
 			Namespace: key.Namespace,
 			Workload:  key.Workload,

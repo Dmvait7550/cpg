@@ -35,7 +35,7 @@ func TestAnnotateRules_IngressAndEgress(t *testing.T) {
 		},
 	}
 
-	cnp := policy.BuildPolicy("coroot", "clickhouse", flows)
+	cnp := policy.BuildPolicy("coroot", "clickhouse", flows, nil)
 	data, err := yaml.Marshal(cnp)
 	require.NoError(t, err)
 

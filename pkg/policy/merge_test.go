@@ -16,11 +16,11 @@ func TestMergePolicy_AddPortToExistingPeer(t *testing.T) {
 	// Existing: peer A port 80
 	existing := policy.BuildPolicy("default", "server", []*flowpb.Flow{
 		testdata.IngressTCPFlow([]string{"k8s:app=client"}, []string{"k8s:app=server"}, "default", 80),
-	})
+	}, nil)
 	// Incoming: peer A port 443
 	incoming := policy.BuildPolicy("default", "server", []*flowpb.Flow{
 		testdata.IngressTCPFlow([]string{"k8s:app=client"}, []string{"k8s:app=server"}, "default", 443),
-	})
+	}, nil)
 
 	merged := policy.MergePolicy(existing, incoming)
 	require.NotNil(t, merged)
@@ -41,11 +41,11 @@ func TestMergePolicy_AddNewPeer(t *testing.T) {
 	// Existing: peer A
 	existing := policy.BuildPolicy("default", "server", []*flowpb.Flow{
 		testdata.IngressTCPFlow([]string{"k8s:app=client-a"}, []string{"k8s:app=server"}, "default", 80),
-	})
+	}, nil)
 	// Incoming: peer B
 	incoming := policy.BuildPolicy("default", "server", []*flowpb.Flow{
 		testdata.IngressTCPFlow([]string{"k8s:app=client-b"}, []string{"k8s:app=server"}, "default", 80),
-	})
+	}, nil)
 
 	merged := policy.MergePolicy(existing, incoming)
 	require.NotNil(t, merged.Spec)
@@ -58,11 +58,11 @@ func TestMergePolicy_DuplicatePortSkipped(t *testing.T) {
 	// Existing: peer A port 80/TCP
 	existing := policy.BuildPolicy("default", "server", []*flowpb.Flow{
 		testdata.IngressTCPFlow([]string{"k8s:app=client"}, []string{"k8s:app=server"}, "default", 80),
-	})
+	}, nil)
 	// Incoming: same peer A port 80/TCP (duplicate)
 	incoming := policy.BuildPolicy("default", "server", []*flowpb.Flow{
 		testdata.IngressTCPFlow([]string{"k8s:app=client"}, []string{"k8s:app=server"}, "default", 80),
-	})
+	}, nil)
 
 	merged := policy.MergePolicy(existing, incoming)
 	require.NotNil(t, merged.Spec)
@@ -77,11 +77,11 @@ func TestMergePolicy_EgressMerge(t *testing.T) {
 	// Existing: egress to dns port 53
 	existing := policy.BuildPolicy("default", "client", []*flowpb.Flow{
 		testdata.EgressUDPFlow([]string{"k8s:app=client"}, []string{"k8s:app=dns"}, "default", 53),
-	})
+	}, nil)
 	// Incoming: egress to dns port 5353
 	incoming := policy.BuildPolicy("default", "client", []*flowpb.Flow{
 		testdata.EgressUDPFlow([]string{"k8s:app=client"}, []string{"k8s:app=dns"}, "default", 5353),
-	})
+	}, nil)
 
 	merged := policy.MergePolicy(existing, incoming)
 	require.NotNil(t, merged.Spec)
@@ -99,10 +99,10 @@ func TestMergePolicy_EgressMerge(t *testing.T) {
 func TestMergePolicy_PreservesObjectMeta(t *testing.T) {
 	existing := policy.BuildPolicy("production", "api", []*flowpb.Flow{
 		testdata.IngressTCPFlow([]string{"k8s:app=client"}, []string{"k8s:app=api"}, "production", 80),
-	})
+	}, nil)
 	incoming := policy.BuildPolicy("production", "api", []*flowpb.Flow{
 		testdata.IngressTCPFlow([]string{"k8s:app=client"}, []string{"k8s:app=api"}, "production", 443),
-	})
+	}, nil)
 
 	merged := policy.MergePolicy(existing, incoming)
 

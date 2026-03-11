@@ -14,6 +14,11 @@ import (
 	"github.com/SoulKyu/cpg/pkg/labels"
 )
 
+// FlowTracker receives flows that cannot be converted to policy rules.
+type FlowTracker interface {
+	Track(f *flowpb.Flow, reason string)
+}
+
 // ReservedWorldIdentity is the Cilium reserved identity for external/world traffic.
 const ReservedWorldIdentity uint32 = 2
 
@@ -80,7 +85,7 @@ type PolicyEvent struct {
 // BuildPolicy transforms a set of Hubble dropped flows into a CiliumNetworkPolicy.
 // For INGRESS flows: endpointSelector = destination, IngressRule with FromEndpoints = source.
 // For EGRESS flows: endpointSelector = source, EgressRule with ToEndpoints = destination.
-func BuildPolicy(namespace, workload string, flows []*flowpb.Flow) *ciliumv2.CiliumNetworkPolicy {
+func BuildPolicy(namespace, workload string, flows []*flowpb.Flow, tracker FlowTracker) *ciliumv2.CiliumNetworkPolicy {
 	cnp := &ciliumv2.CiliumNetworkPolicy{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "cilium.io/v2",
@@ -100,6 +105,9 @@ func BuildPolicy(namespace, workload string, flows []*flowpb.Flow) *ciliumv2.Cil
 	var ingressFlows, egressFlows []*flowpb.Flow
 	for _, f := range flows {
 		if f.L4 == nil {
+			if tracker != nil {
+				tracker.Track(f, "no_l4")
+			}
 			continue
 		}
 		switch f.TrafficDirection {
@@ -129,10 +137,10 @@ func BuildPolicy(namespace, workload string, flows []*flowpb.Flow) *ciliumv2.Cil
 	}
 
 	// Build ingress rules: group by peer (source labels)
-	cnp.Spec.Ingress = buildIngressRules(ingressFlows, namespace)
+	cnp.Spec.Ingress = buildIngressRules(ingressFlows, namespace, tracker)
 
 	// Build egress rules: group by peer (destination labels)
-	cnp.Spec.Egress = buildEgressRules(egressFlows, namespace)
+	cnp.Spec.Egress = buildEgressRules(egressFlows, namespace, tracker)
 
 	return cnp
 }
@@ -236,7 +244,7 @@ func mustAtoi(s string) int {
 
 // buildIngressRules groups ingress flows by source peer and builds IngressRules.
 // Handles endpoint selectors, CIDR (world), reserved entities, and ICMP.
-func buildIngressRules(flows []*flowpb.Flow, policyNamespace string) []api.IngressRule {
+func buildIngressRules(flows []*flowpb.Flow, policyNamespace string, tracker FlowTracker) []api.IngressRule {
 	peers := make(map[string]*struct {
 		selector api.EndpointSelector
 		*peerRules
@@ -251,10 +259,16 @@ func buildIngressRules(flows []*flowpb.Flow, policyNamespace string) []api.Ingre
 
 	for _, f := range flows {
 		if f.Source == nil {
+			if tracker != nil {
+				tracker.Track(f, "nil_source")
+			}
 			continue
 		}
 		fp := extractProto(f)
 		if fp == nil {
+			if tracker != nil {
+				tracker.Track(f, "unknown_protocol")
+			}
 			continue
 		}
 
@@ -274,6 +288,9 @@ func buildIngressRules(flows []*flowpb.Flow, policyNamespace string) []api.Ingre
 		if isWorldIdentity(f.Source) {
 			ip := getSourceIP(f)
 			if ip == "" {
+				if tracker != nil {
+					tracker.Track(f, "world_no_ip")
+				}
 				continue
 			}
 			cidrStr := ip + "/32"
@@ -367,7 +384,7 @@ func buildIngressRules(flows []*flowpb.Flow, policyNamespace string) []api.Ingre
 
 // buildEgressRules groups egress flows by destination peer and builds EgressRules.
 // Handles endpoint selectors, CIDR (world), reserved entities, and ICMP.
-func buildEgressRules(flows []*flowpb.Flow, policyNamespace string) []api.EgressRule {
+func buildEgressRules(flows []*flowpb.Flow, policyNamespace string, tracker FlowTracker) []api.EgressRule {
 	peers := make(map[string]*struct {
 		selector api.EndpointSelector
 		*peerRules
@@ -382,10 +399,16 @@ func buildEgressRules(flows []*flowpb.Flow, policyNamespace string) []api.Egress
 
 	for _, f := range flows {
 		if f.Destination == nil {
+			if tracker != nil {
+				tracker.Track(f, "nil_destination")
+			}
 			continue
 		}
 		fp := extractProto(f)
 		if fp == nil {
+			if tracker != nil {
+				tracker.Track(f, "unknown_protocol")
+			}
 			continue
 		}
 
@@ -405,6 +428,9 @@ func buildEgressRules(flows []*flowpb.Flow, policyNamespace string) []api.Egress
 		if isWorldIdentity(f.Destination) {
 			ip := getDestinationIP(f)
 			if ip == "" {
+				if tracker != nil {
+					tracker.Track(f, "world_no_ip")
+				}
 				continue
 			}
 			cidrStr := ip + "/32"

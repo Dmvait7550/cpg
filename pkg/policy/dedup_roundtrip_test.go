@@ -22,8 +22,8 @@ func TestPoliciesEquivalent_TwoBuildPolicyOutputs(t *testing.T) {
 		testdata.WorldIngressTCPFlow("1.2.3.4", 8080, []string{"k8s:app=server"}, "default"),
 	}
 
-	p1 := policy.BuildPolicy("default", "server", flows)
-	p2 := policy.BuildPolicy("default", "server", flows)
+	p1 := policy.BuildPolicy("default", "server", flows, nil)
+	p2 := policy.BuildPolicy("default", "server", flows, nil)
 
 	assert.True(t, policy.PoliciesEquivalent(p1, p2),
 		"Two BuildPolicy outputs from same flows should be equivalent")
@@ -39,7 +39,7 @@ func TestPoliciesEquivalent_BuildPolicyVsYAMLRoundtrip(t *testing.T) {
 		testdata.WorldEgressTCPFlow([]string{"k8s:app=server"}, "default", "8.8.8.8", 53),
 	}
 
-	original := policy.BuildPolicy("default", "server", flows)
+	original := policy.BuildPolicy("default", "server", flows, nil)
 
 	data, err := yaml.Marshal(original)
 	require.NoError(t, err)
@@ -68,7 +68,7 @@ func TestPoliciesEquivalent_MergedVsOriginal(t *testing.T) {
 		testdata.IngressTCPFlow([]string{"k8s:app=client"}, []string{"k8s:app=server"}, "default", 80),
 	}
 
-	original := policy.BuildPolicy("default", "server", flows)
+	original := policy.BuildPolicy("default", "server", flows, nil)
 
 	// Roundtrip
 	data, err := yaml.Marshal(original)
@@ -77,7 +77,7 @@ func TestPoliciesEquivalent_MergedVsOriginal(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal(data, &fromDisk))
 
 	// Merge same content
-	incoming := policy.BuildPolicy("default", "server", flows)
+	incoming := policy.BuildPolicy("default", "server", flows, nil)
 	merged := policy.MergePolicy(&fromDisk, incoming)
 
 	assert.True(t, policy.PoliciesEquivalent(original, merged),
