@@ -35,6 +35,10 @@ Flows are aggregated by namespace and workload on a configurable interval (defau
 ## Install
 
 ```bash
+# kubectl krew
+kubectl krew install cilium-policy-gen
+
+# go install
 go install github.com/SoulKyu/cpg/cmd/cpg@latest
 ```
 
@@ -47,7 +51,9 @@ make build
 # binary lands in ./bin/cpg
 ```
 
-Requires Go 1.25+.
+When installed via krew, use `kubectl cilium-policy-gen` instead of `cpg`. Same flags, same behavior.
+
+Requires Go 1.25+ for source builds.
 
 ## Quick start
 
@@ -146,6 +152,47 @@ This means generated policies survive rolling updates and don't accidentally pin
 
 When you omit `--server`, cpg finds the `hubble-relay` pod in `kube-system` using your kubeconfig and sets up a port-forward automatically. One less terminal tab to manage.
 
+## k9s plugin
+
+You can trigger cpg directly from k9s on a namespace. Drop this into `$XDG_CONFIG_HOME/k9s/plugins.yaml` (usually `~/.config/k9s/plugins.yaml`):
+
+```yaml
+plugins:
+  cpg:
+    shortCut: Shift-G
+    description: Generate Cilium policies from dropped flows
+    scopes:
+    - namespace
+    command: cpg
+    background: false
+    args:
+    - generate
+    - -n
+    - $NAME
+    - --cluster-dedup
+```
+
+Navigate to a namespace in k9s, press `Shift-G`, and cpg starts streaming dropped flows for that namespace. Ctrl+C to stop -- policies land in `./policies/<namespace>/`.
+
+If you installed via krew instead of `go install`, replace `command: cpg` with `command: kubectl` and prepend `cilium-policy-gen` to the args:
+
+```yaml
+plugins:
+  cpg:
+    shortCut: Shift-G
+    description: Generate Cilium policies from dropped flows
+    scopes:
+    - namespace
+    command: kubectl
+    background: false
+    args:
+    - cilium-policy-gen
+    - generate
+    - -n
+    - $NAME
+    - --cluster-dedup
+```
+
 ## Project structure
 
 ```
@@ -179,4 +226,4 @@ Honest ones:
 
 ## License
 
-MIT
+Apache 2.0
