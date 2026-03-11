@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.5.0](https://github.com/SoulKyu/cpg/compare/v1.4.0...v1.5.0) (2026-03-11)
+
+
+### Features
+
+* add Flush() with structured INFO summary and counter reset ([53953e1](https://github.com/SoulKyu/cpg/commit/53953e14a042bdff044aa508edc033befc487652))
+* add UnhandledTracker with Track() and dedup logic ([91ff19d](https://github.com/SoulKyu/cpg/commit/91ff19d7513bf2e6b00497d01bf18e7b8976135e))
+* flush UnhandledTracker at each aggregation cycle and shutdown ([8a6742e](https://github.com/SoulKyu/cpg/commit/8a6742e9809f58cd72edf828743eb76c6aed6525))
+* integrate UnhandledTracker into aggregator for nil_endpoint and empty_namespace ([e5bc231](https://github.com/SoulKyu/cpg/commit/e5bc2316eefc02cff8ee41589f82e8cf7f39b9cb))
+* integrate UnhandledTracker into policy builder for all skip reasons ([a4012b9](https://github.com/SoulKyu/cpg/commit/a4012b98a0163b1ff75e706df794cb20b536f730))
+
+
+### Bug Fixes
+
+* add TrafficDirection to dedup key, use strings.Contains in tests ([12373e9](https://github.com/SoulKyu/cpg/commit/12373e99a8838c23c7d45b795d3b66105998f92f))
+
 ## [1.4.0](https://github.com/SoulKyu/cpg/compare/v1.3.0...v1.4.0) (2026-03-10)
 
 
