@@ -54,6 +54,36 @@ func (t *UnhandledTracker) Track(f *flowpb.Flow, reason string) {
 	)
 }
 
+// Flush emits a structured INFO log summarizing unhandled flow counts by reason,
+// then resets the counters. The seen map is NOT reset — each unique flow only
+// produces one DEBUG log for the entire process lifetime.
+// If all counters are zero (no new tracks since last flush), no log is emitted.
+func (t *UnhandledTracker) Flush() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	// Collect non-zero counters
+	var fields []zap.Field
+	var total int64
+	for reason, count := range t.counters {
+		if count > 0 {
+			fields = append(fields, zap.Int64(reason, count))
+			total += count
+		}
+	}
+
+	if total == 0 {
+		return
+	}
+
+	t.logger.Info("unhandled flows summary", fields...)
+
+	// Reset counters but keep seen map
+	for k := range t.counters {
+		t.counters[k] = 0
+	}
+}
+
 // dedupKey builds a unique key from the flow's identity fields and reason.
 func (t *UnhandledTracker) dedupKey(f *flowpb.Flow, reason string) string {
 	src := endpointID(f.Source)
